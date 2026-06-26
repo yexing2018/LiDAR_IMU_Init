@@ -46,7 +46,7 @@
 #include <pcl/io/pcd_io.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
-#include <livox_ros_driver/CustomMsg.h>
+#include <livox_ros_driver2/CustomMsg.h>
 #include "preprocess.h"
 #include <ikd-Tree/ikd_Tree.h>
 #include <LI_init/LI_init.h>
@@ -68,6 +68,7 @@ condition_variable sig_buffer;
 
 string root_dir = ROOT_DIR;
 string map_file_path, lid_topic, imu_topic;
+string calib_txt;
 
 int iterCount = 0, feats_down_size = 0, NUM_MAX_ITERATIONS = 0, laserCloudValidNum = 0, \
  effect_feat_num = 0, scan_count = 0, publish_count = 0;
@@ -307,7 +308,7 @@ void lasermap_fov_segment() {
 double timediff_imu_wrt_lidar = 0.0;
 bool timediff_set_flg = false;
 
-void livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &msg) {
+void livox_pcl_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg) {
     mtx_buffer.lock();
     scan_count++;
     if (msg->header.stamp.toSec() < last_timestamp_lidar) {
@@ -798,6 +799,7 @@ int main(int argc, char **argv) {
     nh.param<bool>("pcd_save/pcd_save_en", pcd_save_en, false);
     nh.param<int>("pcd_save/interval", pcd_save_interval, -1);
 
+    nh.param<string>("common/calib_txt", calib_txt, "lidar_in_build_imu.txt");
     cout << "lidar_type: " << lidar_type << endl;
     cout << "LiDAR-only odometry starts." << endl;
 
@@ -852,7 +854,7 @@ int main(int argc, char **argv) {
     boost::filesystem::create_directories(root_dir + "/result");
     ofstream fout_out;
     fout_out.open(DEBUG_FILE_DIR("mat_out.txt"), ios::out);
-    fout_result.open(RESULT_FILE_DIR("Initialization_result.txt"), ios::out);
+    fout_result.open(RESULT_FILE_DIR(calib_txt.c_str()), ios::out);
     if (fout_out)
         cout << "~~~~" << ROOT_DIR << " file opened" << endl;
     else
@@ -1181,7 +1183,7 @@ int main(int argc, char **argv) {
                     fout_result << "Refinement result:" << endl;
                     fileout_calib_result();
                     string path = ros::package::getPath("lidar_imu_init");
-                    path += "/result/Initialization_result.txt";
+                    path += "/result/" + calib_txt;
                     cout << endl  << "Initialization and refinement result is written to " << endl << BOLDGREEN << path << RESET <<endl;
                 }
             }
